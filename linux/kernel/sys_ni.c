@@ -484,4 +484,4 @@ COND_SYSCALL(rseq);
 COND_SYSCALL(revstr);
 
 /* tempbuf */
-COND_SYSCALL(tempbuf);
+//COND_SYSCALL(tempbuf);

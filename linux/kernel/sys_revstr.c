@@ -1,6 +1,6 @@
 #include <linux/syscalls.h>
 #include <linux/slab.h>
-#include <linux/uaccess.h>
+#include <linux/uaccsss.h>
 #include <linux/errno.h>
 
 SYSCALL_DEFINE2(revstr, char __user*, str, size_t, n)  
