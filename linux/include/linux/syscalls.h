@@ -1273,7 +1273,7 @@ asmlinkage long sys_old_mmap(struct mmap_arg_struct __user *arg);
 asmlinkage long sys_revstr(char *str, size_t n);
 
 /* kernel/tempbuf.c */
-//asmlinkage long sys_tempbuf(enum mode, void *data, size_t size);
+asmlinkage long sys_tempbuf(enum mode, void *data, size_t size);
 
 
 /*

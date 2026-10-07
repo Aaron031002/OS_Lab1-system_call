@@ -13,6 +13,7 @@ obj-y     = fork.o exec_domain.o panic.o \
 	    async.o range.o smpboot.o ucount.o regset.o
 
 obj-y += sys_revstr.o
+obj-y += sys_tempbuf.o
 
 obj-$(CONFIG_USERMODE_DRIVER) += usermode_driver.o
 obj-$(CONFIG_MODULES) += kmod.o

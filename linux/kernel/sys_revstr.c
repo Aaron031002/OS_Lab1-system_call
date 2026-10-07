@@ -19,7 +19,7 @@ SYSCALL_DEFINE2(revstr, char __user*, str, size_t, n)
 
     kbuf[n] = '\0';
 
-    /* write str to kernel buffer */
+    /* write str to kernel ring buffer */
     printk(KERN_INFO "The origin string: %s\n", kbuf);
 
     /* reverse kbuf */
@@ -37,7 +37,7 @@ SYSCALL_DEFINE2(revstr, char __user*, str, size_t, n)
         }
     }
 
-    /* write reversed str to kernel buffer */
+    /* write reversed str to kernel ring buffer */
     printk(KERN_INFO "The reversed string: %s\n", kbuf);
 
     /* pass the reversed str to user space */
