@@ -2,6 +2,7 @@
 #include <linux/slab.h>
 #include <linux/uaccess.h>
 #include <linux/errno.h>
+#include <linux/printk.h>
 
 SYSCALL_DEFINE2(revstr, char __user*, str, size_t, n)  
 {
@@ -18,6 +19,9 @@ SYSCALL_DEFINE2(revstr, char __user*, str, size_t, n)
 
     kbuf[n] = '\0';
 
+    /* write str to kernel buffer */
+    printk(KERN_INFO "The origin string: %s\n", kbuf);
+
     /* reverse kbuf */
     if (n > 1){
         char *left = kbuf;
@@ -32,6 +36,9 @@ SYSCALL_DEFINE2(revstr, char __user*, str, size_t, n)
             right--;
         }
     }
+
+    /* write reversed str to kernel buffer */
+    printk(KERN_INFO "The reversed string: %s\n", kbuf);
 
     /* pass the reversed str to user space */
     if (copy_to_user(str, kbuf, n)){
