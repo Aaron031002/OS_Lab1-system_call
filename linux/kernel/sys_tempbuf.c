@@ -5,6 +5,7 @@
 #include <linux/printk.h>
 #include <linux/errno.h>
 #include <linux/string.h>
+#include <linux/mutex.h>
 
 #define PRINT 0
 #define ADD 1
@@ -18,6 +19,8 @@ struct tempbuf_node {
 
 /* initialize the shared list (create sentinel head) */
 static LIST_HEAD(tempbuf_list);
+/* define mutex lock */
+static DEFINE_MUTEX(tempbuf_lock);
 
 static long tempbuf_add(void __user *data, size_t size)
 {
@@ -48,9 +51,13 @@ static long tempbuf_add(void __user *data, size_t size)
 
     node->len = size;
 
+    mutex_lock(&tempbuf_lock);
+
     list_add_tail(&node->list, &tempbuf_list);
 
     printk(KERN_INFO "[tempbuf] Added: %s\n", node->data);
+
+    mutex_unlock(&tempbuf_lock);
 
     return 0;
 }
@@ -75,12 +82,16 @@ static long tempbuf_remove(void __user *data, size_t size)
     }     
     target[size] = '\0';
 
+    mutex_lock(&tempbuf_lock);
+
     /* traverse the node list to find the target node */
     list_for_each_entry_safe(node, next, &tempbuf_list, list){
         if (node->len == size && !strcmp(target, node->data)){
             list_del(&node->list);      // remove the first found target node
         
             printk(KERN_INFO "[tempbuf] Removed: %s\n", node->data);
+
+            mutex_unlock(&tempbuf_lock);
 
             kfree(node->data);
             kfree(node);
@@ -89,6 +100,8 @@ static long tempbuf_remove(void __user *data, size_t size)
             return 0;
         }
     }
+
+    mutex_unlock(&tempbuf_lock);
 
     kfree(target);
     return -ENOENT;
@@ -104,6 +117,8 @@ static long tempbuf_print(void __user *data, size_t size)
     bool first_node = true; // check if it is the first node
     size_t copied;
 
+    mutex_lock(&tempbuf_lock);
+
     /* calculate the size to allocate to 'result'(concatenating string) */
     list_for_each_entry(node, &tempbuf_list, list){
         if (first_node)
@@ -116,8 +131,10 @@ static long tempbuf_print(void __user *data, size_t size)
 
     /* allocate memory space to 'result' */
     result = kmalloc(result_size + 1, GFP_KERNEL);
-    if (!result)
+    if (!result){
+        mutex_unlock(&tempbuf_lock);
         return -ENOMEM;
+    }
 
     /* concatenate all the strings to 'result' */
     list_for_each_entry(node, &tempbuf_list, list){
@@ -131,6 +148,8 @@ static long tempbuf_print(void __user *data, size_t size)
         pos += node->len;
     }
     result[pos] = '\0';
+
+    mutex_unlock(&tempbuf_lock);
 
     /* write the result to kernel buffer */
     printk(KERN_INFO "[tempbuf] %s\n", result);
