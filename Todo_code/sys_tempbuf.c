@@ -22,10 +22,30 @@ static long tempbuf_add(void __user *data, size_t size)
 {
     struct tempbuf_node* node;
 
-    node = kmalloc(sizeof(*node), GFP_KERNEL);  // allocate memory space for 'node' struct
+    if (size == (size_t) - 1)   // input size is too large
+        return -ENOMEM;
 
-    node->data = kmalloc(size + 1, GFP_KERNEL); // allocate memory space for node->data
-    copy_from_user(node->data, data, size);     // copy the content of 'data' into kernel memory space
+    /* allocate memory space for 'node' struct */
+    node = kmalloc(sizeof(*node), GFP_KERNEL);   
+    if (!node){
+        kfree(node);
+        return -ENOMEM;
+    }
+
+    /* allocate memory space for node->data */
+    node->data = kmalloc(size + 1, GFP_KERNEL);
+    if (!node->data){
+        kfree(node->data);
+        kfree(node);
+        return -ENOMEM;
+    }
+
+    /* copy the content of 'data' into kernel memory space */
+    if (copy_from_user(node->data, data, size)){      
+        kfree(node->data);
+        kfree(node);
+        return -EFAULT;
+    }
     node->data[size] = '\0';
 
     node->len = size;
@@ -42,14 +62,24 @@ static long tempbuf_remove(void __user *data, size_t size)
     struct tempbuf_node *node, *next;   // node: point to the current node in loop, next: point to the next node (for safe deletion)
     char* target;
 
-    target = kmalloc(size + 1, GFP_KERNEL);     // allocate memory space for target in kernel space
+    if (size == (size_t) - 1)   // input size is too large
+        return -ENOMEM;
 
-    copy_from_user(target, data, size);     // copy the content of 'data' to kernel space
+    /* allocate memory space for target in kernel space */
+    target = kmalloc(size + 1, GFP_KERNEL);     
+    if (!target)
+        return -ENOMEM;
+
+    /* copy the content of 'data' to kernel space */
+    if (copy_from_user(target, data, size)){
+        kfree(target);
+        return -EFAULT;
+    }     
     target[size] = '\0';
 
     /* traverse the node list to find the target node */
     list_for_each_entry_safe(node, next, &tempbuf_list, list){
-        if (!strcmp(target, node->data)){
+        if (node->len == size && !strcmp(target, node->data)){
             list_del(&node->list);      // remove the first found target node
         
             printk(KERN_INFO "[tempbuf] Removed: %s\n", node->data);
@@ -61,6 +91,8 @@ static long tempbuf_remove(void __user *data, size_t size)
             return 0;
         }
     }
+
+    kfree(target);
     return -ENOENT;
 }
 
@@ -80,6 +112,8 @@ static long tempbuf_print(void __user *data, size_t size)
             alloc_size += node->len;
         else
             alloc_size += node->len + 1;
+
+        first = false;
     }   
 
     /* allocate memory space to 'result' */
@@ -94,7 +128,7 @@ static long tempbuf_print(void __user *data, size_t size)
         
         memcpy(result + pos, node->data, node->len);
         
-        pos += node->list;
+        pos += node->len;
     }
     result[pos] = '\0';
 
@@ -115,6 +149,9 @@ static long tempbuf_print(void __user *data, size_t size)
 
 SYSCALL_DEFINE3(__NR_tempbuf, enum , mode, void __user*, data, size_t, size)
 {       
+    if (!data || size == 0)
+        return -EFAULT;
+    
     switch (mode){
         case ADD:
             return tempbuf_add(data, size);
