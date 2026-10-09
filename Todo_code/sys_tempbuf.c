@@ -6,9 +6,9 @@
 #include <linux/errno.h>
 #include <linux/string.h>
 
-#define ADD 0
-#define REMOVE 1
-#define PRINT 2
+#define PRINT 0
+#define ADD 1
+#define REMOVE 2
 
 struct tempbuf_node {
     char *data;
@@ -28,15 +28,12 @@ static long tempbuf_add(void __user *data, size_t size)
 
     /* allocate memory space for 'node' struct */
     node = kmalloc(sizeof(*node), GFP_KERNEL);   
-    if (!node){
-        kfree(node);
+    if (!node)
         return -ENOMEM;
-    }
 
     /* allocate memory space for node->data */
     node->data = kmalloc(size + 1, GFP_KERNEL);
     if (!node->data){
-        kfree(node->data);
         kfree(node);
         return -ENOMEM;
     }
@@ -102,7 +99,7 @@ static long tempbuf_print(void __user *data, size_t size)
     struct tempbuf_node *node;
 
     char *result;           // concatenating string
-    size_t alloc_size;      // size that should allocate to 'result'
+    size_t result_size = 0;      // size that should allocate to 'result' excluding '\0'
     size_t pos = 0;         // calculate the position to put the single string to 
     bool first_node = true; // check if it is the first node
     size_t copied;
@@ -110,15 +107,15 @@ static long tempbuf_print(void __user *data, size_t size)
     /* calculate the size to allocate to 'result'(concatenating string) */
     list_for_each_entry(node, &tempbuf_list, list){
         if (first_node)
-            alloc_size += node->len;
+            result_size += node->len;
         else
-            alloc_size += node->len + 1;
+            result_size += node->len + 1;
 
         first_node = false;
     }   
 
     /* allocate memory space to 'result' */
-    result = kmalloc(alloc_size + 1, GFP_KERNEL);
+    result = kmalloc(result_size + 1, GFP_KERNEL);
     if (!result)
         return -ENOMEM;
 
@@ -139,7 +136,7 @@ static long tempbuf_print(void __user *data, size_t size)
     printk(KERN_INFO "[tempbuf] %s\n", result);
 
     /* handle the buffer overflow */
-    copied = min(alloc_size - 1, size - 1);
+    copied = min(result_size, size - 1);
     result[copied] = '\0';
 
     /* copy the result string to user space */
