@@ -62,6 +62,9 @@ For `dmesg`:
     :::spoiler Example:
     ![image](Screenshots/8.png)
     :::
+
+4. 在 `linux/kernel/makefile` 加上 compile `sys_revstr.c` & `sys_tempbuf.c`
+    write: `obj-y += sys_revstr.o` & `obj-y += sys_tempbuf.o`
     
 :::info 
 **System call execution:**
