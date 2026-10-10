@@ -1,8 +1,3 @@
----
-title: Lab1_report
-
----
-
 # Basic infomation
 ![image](Screenshots/1.png)
 
@@ -81,6 +76,26 @@ kernel compile 時會把`SYSCALL_DEFINE2(revstr, ...)`裡面的`revstr` 利用 m
 所以 user 在 userspace 執行 `syscall(__NR_revstr)` 時，kernel 會知道 `__NR_revstr` 是 451，而去 `0x12345678` 執行 `SYSCALL_DEFINE2(revstr, ...)`
 
 ::: 
+
+# Patch
+## Creation
+在 `linux/` 執行 `git format-patch -1 HEAD` 即產生 patch file
+## Testing
+1. 查看 Patch 包含哪些檔案：
+`git apply --stat 0001-Add-revstr-and-tempbuf-system-calls.patch`
+2. 使用 Git 建立另一份乾淨的 Linux 工作目錄：
+`git worktree add --detach ../linux-patch-test v6.1`
+3. 進入 `linux-patch-test/`， 先檢查能否套用：
+```git apply --check ../linux-patch-work/0001-Add-revstr-and-tempbuf-system-calls.patch```
+4. 套用:
+```git am ../linux-patch-work/0001-Add-revstr-and-tempbuf-system-calls.patch```
+5. 在未 config 過的 `linux/` 裡面 run:
+    ```
+    make ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu- olddefconfig 
+
+    make ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu- -j$(nproc) 
+    ```
+6. then run the test program to ensure the patch process has completed
     
 # Implementation
 ## `sys_revstr.c`
