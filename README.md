@@ -4,7 +4,7 @@ title: Lab1_report
 ---
 
 # Basic infomation
-![image](https://hackmd.io/_uploads/Bk1qjV0qze.png)
+![image](Screenshots/1.png)
 
 # Compiling kernel
 1. `make ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu- defconfig`
@@ -35,28 +35,28 @@ title: Lab1_report
 
 # Result screenshots
 ## `test_revstr`
-![image](https://hackmd.io/_uploads/Hy9j_Owifx.png)
+![image](Screenshots/2.png)
 
 For `dmesg`:
-![image](https://hackmd.io/_uploads/SyxlY_vjMl.png)
+![image](Screenshots/3.png)
 
 ## `test_tempbuf`
-![image](https://hackmd.io/_uploads/SypzKdwifl.png)
+![image](Screenshots/4.png)
 
 For `dmesg`:
-![image](https://hackmd.io/_uploads/HJJEtuDsfg.png)
+![image](Screenshots/5.png)
 
 
 # Recording
 ## Prerequisite
 1. 在 `include/linux/syscalls.h` 裡面寫 prototype
     :::spoiler Example:
-    ![image](https://hackmd.io/_uploads/B1XuZs0qGl.png)
+    ![image](Screenshots/6.png)
     :::
 
 2. 在 `include/uapi/asm-generic/unistd.h` 裡面添加 system call number 以及 mapping (這個編號對應哪一個 function (prototype))
     :::spoiler Example:
-    ![image](https://hackmd.io/_uploads/rkne1Nbsze.png)
+    ![image](Screenshots/7.png)
 
     :::
 
@@ -65,7 +65,7 @@ For `dmesg`:
     system call 是否需要編入 kernel is optional
     :::
     :::spoiler Example:
-    ![image](https://hackmd.io/_uploads/H1FlVTR5fl.png)
+    ![image](Screenshots/8.png)
     :::
     
 :::info 
@@ -86,39 +86,39 @@ kernel compile 時會把`SYSCALL_DEFINE2(revstr, ...)`裡面的`revstr` 利用 m
 ## `sys_revstr.c`
 
 1. Function definition:
-![image](https://hackmd.io/_uploads/H1h6DN-ofe.png)
+![image](Screenshots/9.png)
 `SYSCALL_DEFINE2`: this function has two arguments, so write '2' after SYSCALL_DEFINE. 
 And documentation says the argument should be present as (type, name) pair, so write it as above.
 
     `__user` 表示是指向 user space 的 pointer，不可隨意 dereference (即資料存在 user space)
 
 2. string set up in the kernel:
-![image](https://hackmd.io/_uploads/HJAJUTXsze.png)
+![image](Screenshots/10.png)
 since `str` is located in user space, so we should copy them to the kernel space 
 (first allocate memory space for `str` in the kernel, and use `copy_from_user()` to copy the content of `str` to the kernel space)
 
 3. write data to kernel ring buffer (for easy debugging):
-![image](https://hackmd.io/_uploads/ByzrOpmszx.png)
+![image](Screenshots/11.png)
 
 4. reverse `str`(or `kbuf`) using two pointer method:
-![image](https://hackmd.io/_uploads/r1fF_amiGe.png)
+![image](Screenshots/12.png)
 
 5. write the reversed `str`(or `kbuf`) to kernel ring buffer:
-![image](https://hackmd.io/_uploads/H1ppu6Qize.png)
+![image](Screenshots/13.png)
 
 6. pass reversed `str` back to the kernel space using `copy_to_user()`:
-![image](https://hackmd.io/_uploads/HJ5etTXoMg.png) 
+![image](Screenshots/14.png) 
 finally, free the kernel memory sapce used for kbuf, and return 0.
 
 ## `sys_tempbuf.c`
 1. Initialization:
-![image](https://hackmd.io/_uploads/HJIYwBPszl.png)
+![image](Screenshots/15.png)
     :::info
     initializae the header node for node list (it will not be traversed)
     :::
 
 2. `SYSCALL_DEFINE3`:
-![image](https://hackmd.io/_uploads/rJaNurvjfl.png)
+![image](Screenshots/16.png)
 use `switch` `case` to identify the modes
 
 3. `tempbuf_add()`:
@@ -126,13 +126,13 @@ use `switch` `case` to identify the modes
     **Flow concept**: 
     create a new node struct => place data into the node (node->data) => add the new node to the node list using `list_add_tail()`
     :::
-    a. ![image](https://hackmd.io/_uploads/B1jE9SPjfe.png)
+    a. ![image](Screenshots/17.png)
 create a node struct and allocate the memory space in kernel
 
-    b. ![image](https://hackmd.io/_uploads/HkRh5rwjGg.png)
+    b. ![image](Screenshots/18.png)
 copy the data(str) into the node (from user space to kernel space) and handle the string termination sign
 
-    c. ![image](https://hackmd.io/_uploads/ryxUsrwizx.png)
+    c. ![image](Screenshots/19.png)
 add the new node to the node list and then put the message into kernel ring buffer
 
 4. `tempbuf_remove()`:
@@ -140,12 +140,12 @@ add the new node to the node list and then put the message into kernel ring buff
     **Flow concept**:
     copy the target data into kernel space => traverse the node list to find the targeted node => if found, delete the node
     :::
-    a. ![image](https://hackmd.io/_uploads/HkeahBPiGe.png)
+    a. ![image](Screenshots/20.png)
 define `node` & `next` for traversing (the current node and the next node)
 
     copy the data from user space to kernel space
 
-    b. ![image](https://hackmd.io/_uploads/r1EYarPiMe.png)
+    b. ![image](Screenshots/21.png)
 traverse the node list (using `list_for_each_entry_safe` to find all or `list_for_each_entry` to find one) and delete the target node (if found)
 
 5. `tempbuf_print()`:
@@ -153,13 +153,13 @@ traverse the node list (using `list_for_each_entry_safe` to find all or `list_fo
     **Flow concept**:
     count the size that should be allocated to the concatenated string and allocate it => concate all the strings to `result` string => pass it back to user space and place it to kernel ring buffer
     :::
-    a. ![image](https://hackmd.io/_uploads/HJ6EIdDoze.png)
+    a. ![image](Screenshots/22.png)
 count the total size that should be allocated to `result` string
 
-    b. ![image](https://hackmd.io/_uploads/HkqqL_wofl.png)
+    b. ![image](Screenshots/23.png)
 travrse each node and concate all to the tail of the result string (using `pos` variable)
     
-    c. ![image](https://hackmd.io/_uploads/H12zPdPoGg.png)
+    c. ![image](Screenshots/24.png)
 place the message into kernel ring buffer using `printk()` and send it back to user space using `copy_to_user()`
     
 # Things optional to be done
